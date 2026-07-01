@@ -1,0 +1,26 @@
+class Solution:
+    def maxSumSubarray(self, arr):
+        n = len(arr)
+
+        # Forward max subarray sum
+        forward = [0] * n
+        forward[0] = arr[0]
+
+        for i in range(1, n):
+            forward[i] = max(arr[i], forward[i-1] + arr[i])
+
+        # Backward max subarray sum
+        backward = [0] * n
+        backward[n-1] = arr[n-1]
+
+        for i in range(n-2, -1, -1):
+            backward[i] = max(arr[i], backward[i+1] + arr[i])
+
+        # Maximum without deletion
+        ans = max(forward)
+
+        # Try deleting one element
+        for i in range(1, n-1):
+            ans = max(ans, forward[i-1] + backward[i+1])
+
+        return ans
