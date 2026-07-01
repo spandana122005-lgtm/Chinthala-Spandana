@@ -1,0 +1,19 @@
+class Solution:
+    def maxSumSubarray(self, arr):
+        n = len(arr)
+
+        # max sum without deletion
+        keep = arr[0]
+
+        # max sum with one deletion
+        delete = 0
+
+        ans = arr[0]
+
+        for i in range(1, n):
+            delete = max(delete + arr[i], keep)
+            keep = max(keep + arr[i], arr[i])
+
+            ans = max(ans, keep, delete)
+
+        return ans
