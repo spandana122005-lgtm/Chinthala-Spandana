@@ -1,0 +1,47 @@
+from bisect import bisect_right
+
+class Solution(object):
+    def gcdValues(self, nums, queries):
+        """
+        :type nums: List[int]
+        :type queries: List[int]
+        :rtype: List[int]
+        """
+        maxVal = max(nums)
+
+        freq = [0] * (maxVal + 1)
+        for x in nums:
+            freq[x] += 1
+
+        cnt = [0] * (maxVal + 1)
+
+        # Count pairs whose gcd is divisible by i
+        for i in range(1, maxVal + 1):
+            c = 0
+            for j in range(i, maxVal + 1, i):
+                c += freq[j]
+            cnt[i] = c * (c - 1) // 2
+
+        # Inclusion-Exclusion to get pairs with gcd exactly i
+        exact = [0] * (maxVal + 1)
+        for i in range(maxVal, 0, -1):
+            exact[i] = cnt[i]
+            for j in range(i * 2, maxVal + 1, i):
+                exact[i] -= exact[j]
+
+        values = []
+        prefix = []
+        total = 0
+
+        for g in range(1, maxVal + 1):
+            if exact[g] > 0:
+                total += exact[g]
+                values.append(g)
+                prefix.append(total)
+
+        ans = []
+        for q in queries:
+            idx = bisect_right(prefix, q)
+            ans.append(values[idx])
+
+        return ans
