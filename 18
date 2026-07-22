@@ -1,0 +1,95 @@
+class SparseTable:
+    def __init__(self, arr):
+        self.n = len(arr)
+        if self.n == 0:
+            return
+        self.K = self.n.bit_length()
+        self.st = [[0] * self.n for _ in range(self.K)]
+        self.st[0] = list(arr)
+
+        for i in range(1, self.K):
+            for j in range(self.n - (1 << i) + 1):
+                self.st[i][j] = max(
+                    self.st[i - 1][j], 
+                    self.st[i - 1][j + (1 << (i - 1))]
+                )
+
+    def query(self, L, R):
+        if L > R:
+            return 0
+        length = R - L + 1
+        k = length.bit_length() - 1
+        return max(self.st[k][L], self.st[k][R - (1 << k) + 1])
+
+
+class Solution:
+    def maxActiveSectionsAfterTrade(self, s, queries):
+        n = len(s)
+        O_total = s.count('1')
+
+        # 1. Identify all contiguous '0' groups G_0, G_1, ...
+        zero_groups = []  # Stores tuples of (start_idx, end_idx, length)
+        i = 0
+        while i < n:
+            if s[i] == '0':
+                j = i
+                while j < n and s[j] == '0':
+                    j += 1
+                zero_groups.append((i, j - 1, j - i))
+                i = j
+            else:
+                i += 1
+
+        m = len(zero_groups)
+
+        # 2. Build Sparse Table for adjacent zero group sums
+        adj_sums = [
+            zero_groups[k][2] + zero_groups[k + 1][2] 
+            for k in range(m - 1)
+        ]
+        st = SparseTable(adj_sums)
+
+        # 3. Precompute O(1) group index mapping for any position [l, r]
+        first_group = [-1] * n
+        curr = 0
+        for i in range(n):
+            while curr < m and zero_groups[curr][1] < i:
+                curr += 1
+            first_group[i] = curr if curr < m else -1
+
+        last_group = [-1] * n
+        curr = m - 1
+        for i in range(n - 1, -1, -1):
+            while curr >= 0 and zero_groups[curr][0] > i:
+                curr -= 1
+            last_group[i] = curr if curr >= 0 else -1
+
+        # 4. Process queries in O(1) time each
+        ans = []
+        for l, r in queries:
+            k_start = first_group[l]
+            k_end = last_group[r]
+
+            # Fewer than 2 zero groups inside the range -> No valid trade
+            if k_start == -1 or k_end == -1 or k_start >= k_end:
+                ans.append(O_total)
+                continue
+
+            start_s, start_e, _ = zero_groups[k_start]
+            end_s, end_e, _ = zero_groups[k_end]
+
+            # Effective lengths of the boundary '0' groups sliced at l and r
+            L_l = min(start_e, r) - max(start_s, l) + 1
+            R_r = min(end_e, r) - max(end_s, l) + 1
+
+            if k_end == k_start + 1:
+                gain = L_l + R_r
+            else:
+                c1 = L_l + zero_groups[k_start + 1][2]
+                c2 = zero_groups[k_end - 1][2] + R_r
+                c3 = st.query(k_start + 1, k_end - 2)
+                gain = max(c1, c2, c3)
+
+            ans.append(O_total + gain)
+
+        return ans
